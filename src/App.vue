@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -21,7 +21,24 @@ const {
 } = useLeagues()
 const { getBadgeState, loadBadge } = useLeagueBadges()
 
+type ViewState = 'loading' | 'error' | 'empty' | 'ready'
+
 const selectedLeagueId = ref<string | null>(null)
+const viewState = computed<ViewState>(() => {
+  if (isLoading.value) {
+    return 'loading'
+  }
+
+  if (error.value) {
+    return 'error'
+  }
+
+  if (leagues.value.length === 0) {
+    return 'empty'
+  }
+
+  return 'ready'
+})
 
 function handleLeagueSelect(leagueId: string): void {
   if (selectedLeagueId.value === leagueId) {
@@ -49,13 +66,18 @@ function handleBadgeRetry(leagueId: string): void {
     </header>
 
     <main>
-      <section v-if="isLoading" class="page-state" aria-live="polite" aria-busy="true">
+      <section
+        v-if="viewState === 'loading'"
+        class="page-state"
+        aria-live="polite"
+        aria-busy="true"
+      >
         <ProgressSpinner class="page-state__spinner" />
         <h2>Loading leagues</h2>
         <p>Getting the latest league directory from TheSportsDB.</p>
       </section>
 
-      <section v-else-if="error" class="page-state">
+      <section v-else-if="viewState === 'error'" class="page-state">
         <Message severity="error" variant="simple" :closable="false">
           {{ error }}
         </Message>
@@ -64,7 +86,7 @@ function handleBadgeRetry(leagueId: string): void {
         <Button variant="outlined" @click="loadLeagues">Try again</Button>
       </section>
 
-      <section v-else-if="leagues.length === 0" class="page-state" aria-live="polite">
+      <section v-else-if="viewState === 'empty'" class="page-state" aria-live="polite">
         <div class="page-state__symbol" aria-hidden="true">0</div>
         <h2>No leagues available</h2>
         <p>The API returned an empty league list. Try again in a moment.</p>
