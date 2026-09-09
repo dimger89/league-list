@@ -5,6 +5,7 @@ import type { League } from '@/types/sports'
 
 defineProps<{
   leagues: League[]
+  searchTerm: string
   selectedLeagueId: string | null
   getBadgeState: (leagueId: string) => LeagueBadgeState
 }>()
@@ -22,26 +23,41 @@ const emit = defineEmits<{
     <p>Try a broader league name or choose “All sports”.</p>
   </section>
 
-  <div v-else class="league-grid" role="list">
+  <TransitionGroup v-else name="league-list" tag="div" class="league-grid" role="list">
     <LeagueCard
       v-for="league in leagues"
       :key="league.idLeague"
       :league="league"
+      :search-term="searchTerm"
       :selected="selectedLeagueId === league.idLeague"
       :badge-state="getBadgeState(league.idLeague)"
       role="listitem"
       @select="emit('select', $event)"
       @retry="emit('retryBadge', $event)"
     />
-  </div>
+  </TransitionGroup>
 </template>
 
 <style scoped lang="scss">
 .league-grid {
   display: grid;
   align-items: start;
+  grid-auto-rows: max-content;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   gap: 1rem;
+}
+
+.league-list-enter-active,
+.league-list-leave-active {
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.league-list-enter-from,
+.league-list-leave-to {
+  opacity: 0;
+  transform: translateY(0.2rem);
 }
 
 .filter-empty {
@@ -78,6 +94,19 @@ const emit = defineEmits<{
   p {
     margin: 0.55rem 0 0;
     color: var(--color-text-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .league-list-enter-active,
+  .league-list-leave-active {
+    transition: none;
+  }
+
+  .league-list-enter-from,
+  .league-list-leave-to {
+    opacity: 1;
+    transform: none;
   }
 }
 </style>

@@ -9,6 +9,7 @@ import type { League } from '@/types/sports'
 
 const props = defineProps<{
   league: League
+  searchTerm: string
   selected: boolean
   badgeState: LeagueBadgeState
 }>()
@@ -21,6 +22,37 @@ defineEmits<{
 const imageLoadFailed = ref(false)
 const alternateName = computed(() => props.league.strLeagueAlternate?.trim())
 const badgePanelId = computed(() => `league-badge-${props.league.idLeague}`)
+const leagueNameSegments = computed(() => {
+  const name = props.league.strLeague
+  const query = props.searchTerm.trim()
+
+  if (!query) {
+    return [{ text: name, highlighted: false }]
+  }
+
+  const segments: Array<{ text: string; highlighted: boolean }> = []
+  const normalizedName = name.toLowerCase()
+  const normalizedQuery = query.toLowerCase()
+  let currentIndex = 0
+  let matchIndex = normalizedName.indexOf(normalizedQuery)
+
+  while (matchIndex !== -1) {
+    if (matchIndex > currentIndex) {
+      segments.push({ text: name.slice(currentIndex, matchIndex), highlighted: false })
+    }
+
+    const matchEnd = matchIndex + query.length
+    segments.push({ text: name.slice(matchIndex, matchEnd), highlighted: true })
+    currentIndex = matchEnd
+    matchIndex = normalizedName.indexOf(normalizedQuery, currentIndex)
+  }
+
+  if (currentIndex < name.length) {
+    segments.push({ text: name.slice(currentIndex), highlighted: false })
+  }
+
+  return segments.length > 0 ? segments : [{ text: name, highlighted: false }]
+})
 
 watch(
   () => props.badgeState.badgeUrl,
@@ -42,72 +74,84 @@ watch(
       <span class="league-card__content">
         <span class="league-card__sport">{{ league.strSport }}</span>
         <span class="league-card__name" role="heading" aria-level="3">
-          {{ league.strLeague }}
+          <template v-for="(segment, index) in leagueNameSegments" :key="index">
+            <mark
+              v-if="segment.highlighted"
+              class="league-card__name-highlight"
+              v-text="segment.text"
+            ></mark>
+            <template v-else>{{ segment.text }}</template>
+          </template>
         </span>
         <span v-if="alternateName" class="league-card__alternate">{{ alternateName }}</span>
       </span>
       <span class="league-card__toggle" aria-hidden="true">{{ selected ? '−' : '+' }}</span>
     </button>
 
-    <div v-if="selected" :id="badgePanelId" class="league-card__badge" aria-live="polite">
-      <div v-if="badgeState.status === 'loading'" class="badge-feedback">
-        <ProgressSpinner class="badge-feedback__spinner" />
-        <span>Loading season badge…</span>
-      </div>
-
-      <template v-else-if="badgeState.status === 'success'">
-        <div v-if="imageLoadFailed" class="badge-feedback badge-feedback--stacked">
-          <Message severity="warn" variant="simple" :closable="false">
-            The badge image could not be displayed.
-          </Message>
+    <Transition name="badge">
+      <div v-if="selected" :id="badgePanelId" class="league-card__badge" aria-live="polite">
+        <div v-if="badgeState.status === 'loading'" class="badge-feedback">
+          <ProgressSpinner class="badge-feedback__spinner" />
+          <span>Loading season badge…</span>
         </div>
-        <img
-          v-else
-          class="league-card__badge-image"
-          :src="badgeState.badgeUrl ?? undefined"
-          :alt="`${league.strLeague} season badge`"
-          loading="lazy"
-          @error="imageLoadFailed = true"
-        />
-      </template>
 
-      <Message
-        v-else-if="badgeState.status === 'empty'"
-        severity="secondary"
-        variant="simple"
-        :closable="false"
-      >
-        No season badge is available for this league.
-      </Message>
+        <template v-else-if="badgeState.status === 'success'">
+          <div v-if="imageLoadFailed" class="badge-feedback badge-feedback--stacked">
+            <Message severity="warn" variant="simple" :closable="false">
+              The badge image could not be displayed.
+            </Message>
+          </div>
+          <img
+            v-else
+            class="league-card__badge-image"
+            :src="badgeState.badgeUrl ?? undefined"
+            :alt="`${league.strLeague} season badge`"
+            loading="lazy"
+            @error="imageLoadFailed = true"
+          />
+        </template>
 
-      <div v-else-if="badgeState.status === 'error'" class="badge-feedback badge-feedback--stacked">
-        <Message severity="error" variant="simple" :closable="false">
-          {{ badgeState.error ?? 'Unable to load the league badge.' }}
+        <Message
+          v-else-if="badgeState.status === 'empty'"
+          severity="secondary"
+          variant="simple"
+          :closable="false"
+        >
+          No season badge is available for this league.
         </Message>
-        <Button size="small" variant="outlined" @click="$emit('retry', league.idLeague)">
-          Try again
-        </Button>
+
+        <div
+          v-else-if="badgeState.status === 'error'"
+          class="badge-feedback badge-feedback--stacked"
+        >
+          <Message severity="error" variant="simple" :closable="false">
+            {{ badgeState.error ?? 'Unable to load the league badge.' }}
+          </Message>
+          <Button size="small" variant="outlined" @click="$emit('retry', league.idLeague)">
+            Try again
+          </Button>
+        </div>
       </div>
-    </div>
+    </Transition>
   </article>
 </template>
 
 <style scoped lang="scss">
 .league-card {
+  height: fit-content;
+  align-self: start;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
   background: var(--color-surface);
   box-shadow: var(--shadow-small);
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 
   &:hover {
     border-color: var(--color-border-strong);
     box-shadow: var(--shadow-medium);
-    transform: translateY(-1px);
   }
 
   &--selected {
@@ -165,6 +209,15 @@ watch(
     line-height: 1.35;
   }
 
+  &__name-highlight {
+    padding: 0;
+    border-radius: 0.15rem;
+    background: var(--color-accent-soft);
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
   &__alternate {
     margin-top: 0.45rem;
     color: var(--color-text-muted);
@@ -202,6 +255,19 @@ watch(
   }
 }
 
+.badge-enter-active,
+.badge-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.badge-enter-from,
+.badge-leave-to {
+  opacity: 0;
+  transform: translateY(0.25rem);
+}
+
 .badge-feedback {
   display: flex;
   align-items: center;
@@ -228,6 +294,17 @@ watch(
 @media (prefers-reduced-motion: reduce) {
   .league-card {
     transition: none;
+  }
+
+  .badge-enter-active,
+  .badge-leave-active {
+    transition: none;
+  }
+
+  .badge-enter-from,
+  .badge-leave-to {
+    opacity: 1;
+    transform: none;
   }
 }
 </style>

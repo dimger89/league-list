@@ -90,6 +90,7 @@ function handleBadgeRetry(leagueId: string): void {
 
         <LeagueList
           :leagues="filteredLeagues"
+          :search-term="searchTerm"
           :selected-league-id="selectedLeagueId"
           :get-badge-state="getBadgeState"
           @select="handleLeagueSelect"
