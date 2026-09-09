@@ -1,0 +1,66 @@
+:root {
+  color-scheme: light;
+  --color-background: #f3f5f7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f9fa;
+  --color-heading: #14232b;
+  --color-text: #33464f;
+  --color-text-muted: #657780;
+  --color-border: #dce3e6;
+  --color-border-strong: #aebcc2;
+  --color-accent: #13866f;
+  --color-accent-strong: #096551;
+  --color-accent-soft: #e1f3ee;
+  --color-focus: rgba(19, 134, 111, 0.34);
+  --radius-medium: 0.85rem;
+  --radius-large: 1.1rem;
+  --shadow-small: 0 1px 2px rgba(20, 35, 43, 0.04);
+  --shadow-medium: 0 10px 28px rgba(20, 35, 43, 0.08);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--color-background);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  border-top: 0.25rem solid var(--color-accent);
+  background: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-heading);
+}
